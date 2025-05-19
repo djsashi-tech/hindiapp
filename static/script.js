@@ -38,12 +38,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentWordsList = [];
     let currentWordIndex = 0;
     let activeCategoryId = null;
+    let currentUser = null;
 
     // Login form submission
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = userNameEl.value.trim();
         if (name) {
+            currentUser = {
+                name: name,
+                progress: JSON.parse(localStorage.getItem(name + '_progress')) || {},
+                pronunciationCount: parseInt(localStorage.getItem(name + '_pronunciationCount')) || 0
+            };
+            document.getElementById('viewReportBtn').classList.remove('disabled'); // Enable report button
             loggedInUser = name;
             loginSection.style.display = 'none';
             learningContent.style.display = 'block';
@@ -53,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 welcomeMessageEl.textContent = `Welcome, ${loggedInUser}! Select a category to start.`;
                 wordDisplayCardHeader.parentNode.insertBefore(welcomeMessageEl, wordDisplayCardHeader);
             }
-            await loadCategories();
+            loadCategories();
         } else {
             // Optionally, show an error if name is empty
             alert('Please enter your name.');
@@ -190,6 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         utterance.lang = 'hi-IN';
         speechSynthesis.speak(utterance);
+
+        // Increment and save pronunciation count
+        if (currentUser && typeof currentUser.pronunciationCount !== 'undefined') {
+            currentUser.pronunciationCount++;
+            localStorage.setItem(currentUser.name + '_pronunciationCount', currentUser.pronunciationCount);
+        }
     }
 
     prevWordBtn.addEventListener('click', () => {
@@ -276,6 +289,28 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (speakWordBtn) {
         speakWordBtn.title = "Speech recognition not supported in your browser.";
         speakWordBtn.disabled = true; // Disable if API not supported
+    }
+
+    // Handle Report Modal display
+    const reportModalElement = document.getElementById('reportModal');
+    if (reportModalElement) {
+        reportModalElement.addEventListener('show.bs.modal', function (event) {
+            if (currentUser) {
+                document.getElementById('reportUserName').textContent = currentUser.name;
+                document.getElementById('pronunciationClickCount').textContent = currentUser.pronunciationCount;
+            } else {
+                // This case should ideally not happen if button is disabled before login
+                document.getElementById('reportUserName').textContent = 'Guest';
+                document.getElementById('pronunciationClickCount').textContent = 'N/A (Please log in)';
+            }
+        });
+    }
+
+    // Initialize Report Button State (disabled by default)
+    // This ensures the button is disabled before any login attempt.
+    const viewReportBtn = document.getElementById('viewReportBtn');
+    if (viewReportBtn) {
+        viewReportBtn.classList.add('disabled');
     }
 
 });
