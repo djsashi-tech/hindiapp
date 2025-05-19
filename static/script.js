@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('Speech Recognition API not supported in this browser.');
     }
 
-    const categoryTabsContainer = document.getElementById('categoryTabs');
-    const currentCategoryNameEl = document.getElementById('currentCategoryName');
+    const lessonTabsContainer = document.getElementById('lessonTabs');
+    const currentLessonNameEl = document.getElementById('currentLessonName');
     const hindiWordEl = document.getElementById('hindiWord');
     const englishMeaningEl = document.getElementById('englishMeaning');
     const pronunciationBtn = document.getElementById('pronunciationBtn');
@@ -34,10 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeMessageEl.className = 'text-center lead my-3';
 
     let loggedInUser = null;
-    let categories = [];
+    let lessons = [];
     let currentWordsList = [];
     let currentWordIndex = 0;
-    let activeCategoryId = null;
+    let activeLessonId = null;
     let currentUser = null;
 
     // Login form submission
@@ -57,76 +57,76 @@ document.addEventListener('DOMContentLoaded', () => {
             // Insert welcome message before category name or somewhere prominent
             const wordDisplayCardHeader = document.querySelector('#wordDisplayCard .card-header');
             if (wordDisplayCardHeader) {
-                welcomeMessageEl.textContent = `Welcome, ${loggedInUser}! Select a category to start.`;
+                welcomeMessageEl.textContent = `Welcome, ${loggedInUser}! Select a lesson to start.`;
                 wordDisplayCardHeader.parentNode.insertBefore(welcomeMessageEl, wordDisplayCardHeader);
             }
-            loadCategories();
+            loadLessons();
         } else {
             // Optionally, show an error if name is empty
             alert('Please enter your name.');
         }
     });
 
-    // Fetch and display categories
-    async function loadCategories() {
+    // Fetch and display lessons
+    async function loadLessons() {
         try {
-            const response = await fetch('/api/categories');
+            const response = await fetch('/api/lessons');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            let fetchedCategories = await response.json();
+            let fetchedLessons = await response.json();
 
-            // De-duplicate categories by name
-            const uniqueCategoryNames = new Set();
-            const uniqueCategoriesResult = []; // Use a new array to store unique categories
-            fetchedCategories.forEach(category => { // Iterate through all fetched categories
-                if (!uniqueCategoryNames.has(category.name)) { // Check if name is already seen
-                    uniqueCategoryNames.add(category.name); // Add name to set
-                    uniqueCategoriesResult.push(category); // Add the category object to our results
+            // De-duplicate lessons by name
+            const uniqueLessonNames = new Set();
+            const uniqueLessonsResult = []; // Use a new array to store unique lessons
+            fetchedLessons.forEach(lesson => { // Iterate through all fetched lessons
+                if (!uniqueLessonNames.has(lesson.name)) { // Check if name is already seen
+                    uniqueLessonNames.add(lesson.name); // Add name to set
+                    uniqueLessonsResult.push(lesson); // Add the lesson object to our results
                 }
             });
-            categories = uniqueCategoriesResult; // Update the global 'categories' array
+            lessons = uniqueLessonsResult; // Update the global 'lessons' array
 
-            renderCategoryTabs();
-            if (categories.length > 0) {
-                currentCategoryNameEl.textContent = 'Select a category to start.';
+            renderLessonTabs();
+            if (lessons.length > 0) {
+                currentLessonNameEl.textContent = 'Select a lesson to start.';
             } else {
-                currentCategoryNameEl.textContent = 'No categories available.';
+                currentLessonNameEl.textContent = 'No lessons available.';
             }
         } catch (error) { // Corrected: removed space before catch
-            console.error('Error loading categories:', error);
-            currentCategoryNameEl.textContent = 'Error loading categories.';
+            console.error('Error loading lessons:', error);
+            currentLessonNameEl.textContent = 'Error loading lessons.';
         }
     }
 
-    function renderCategoryTabs() {
-        categoryTabsContainer.innerHTML = ''; // Clear existing tabs
-        if (categories.length === 0 && loggedInUser) { // Check if loggedInUser to avoid message before login
-            categoryTabsContainer.innerHTML = '<li class="nav-item"><span class="nav-link text-muted">No categories found.</span></li>';
+    function renderLessonTabs() {
+        lessonTabsContainer.innerHTML = ''; // Clear existing tabs
+        if (lessons.length === 0 && loggedInUser) { // Check if loggedInUser to avoid message before login
+            lessonTabsContainer.innerHTML = '<li class="nav-item"><span class="nav-link text-muted">No lessons found.</span></li>';
             return;
         }
-        categories.forEach(category => {
+        lessons.forEach(lesson => {
             const li = document.createElement('li');
             li.className = 'nav-item';
             const a = document.createElement('a');
             a.className = 'nav-link';
             a.href = '#';
-            a.textContent = category.name;
-            a.setAttribute('data-category-id', category.id);
-            a.setAttribute('data-category-name', category.name);
-            if (category.id === activeCategoryId) {
+            a.textContent = lesson.name;
+            a.setAttribute('data-lesson-id', lesson.id);
+            a.setAttribute('data-lesson-name', lesson.name);
+            if (lesson.id === activeLessonId) {
                 a.classList.add('active');
             }
             a.addEventListener('click', (e) => {
                 e.preventDefault();
-                selectCategory(category.id, category.name);
+                selectLesson(lesson.id, lesson.name);
             });
             li.appendChild(a);
-            categoryTabsContainer.appendChild(li);
+            lessonTabsContainer.appendChild(li);
         });
     }
 
-    async function selectCategory(categoryId, categoryName) {
-        activeCategoryId = categoryId;
-        currentCategoryNameEl.textContent = categoryName;
+    async function selectLesson(lessonId, lessonName) {
+        activeLessonId = lessonId;
+        currentLessonNameEl.textContent = lessonName;
         if(welcomeMessageEl && welcomeMessageEl.parentNode) {
             welcomeMessageEl.style.display = 'none'; // Hide welcome message once a category is selected
         }
@@ -140,19 +140,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (speechFeedbackEl) speechFeedbackEl.textContent = '';
         currentWordsList = [];
         currentWordIndex = 0;
-        renderCategoryTabs(); // Re-render to update active tab
+        renderLessonTabs(); // Re-render to update active tab
 
         try {
-            const response = await fetch(`/api/words/category/${categoryId}`);
+            const response = await fetch(`/api/lessons/${lessonId}/words`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             currentWordsList = await response.json();
             if (currentWordsList.length > 0) {
                 displayCurrentWord();
             } else {
-                englishMeaningEl.textContent = 'No words found in this category.';
+                englishMeaningEl.textContent = 'No words found in this lesson.';
             }
         } catch (error) {
-            console.error(`Error loading words for category ${categoryName}:`, error);
+            console.error(`Error loading words for lesson ${lessonName}:`, error); // This line was correct, ensuring it stays as is or is contextually updated if params change.
             englishMeaningEl.textContent = 'Error loading words.';
         }
     }
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pronunciationBtn.addEventListener('click', playPronunciation);
 
     // Initial load is now handled after login
-    // loadCategories(); 
+    // loadLessons(); 
 
     // Speech Recognition Logic
     if (SpeechRecognition && speakWordBtn) {
