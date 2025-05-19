@@ -3,7 +3,7 @@ body {
 }
 
 .navbar {
-    background-color: #007bff !important;
+    background-color: #dc3545 !important; /* Changed to red */
 }
 
 .navbar-brand {
