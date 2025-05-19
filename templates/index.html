@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hindi Learning App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-language me-2"></i>Hindi Learning</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" id="categoryTabs">
+                    <!-- Category tabs will be populated here by JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Word Display Area -->
+            <div class="col-lg-12 mb-4">
+                <div id="wordDisplayCard" class="card h-100">
+                    <div class="card-header text-center">
+                        <h2 id="currentCategoryName" class="mb-0">Select a Category</h2>
+                    </div>
+                    <div class="card-body text-center">
+                        <h1 id="hindiWord" class="display-3 mb-2"></h1>
+                        <p id="englishMeaning" class="lead mb-3"></p>
+                        <button id="pronunciationBtn" class="btn btn-info mb-3" disabled>
+                            <i class="fas fa-volume-up me-1"></i> Pronounce
+                        </button>
+                        <button id="speakWordBtn" class="btn btn-success mb-3 ms-2" disabled>
+                            <i class="fas fa-microphone me-1"></i> Speak Word
+                        </button>
+                        <p id="speechFeedback" class="mt-2 mb-2" style="min-height: 1.5em;"></p>
+                        <img id="wordImage" src="" alt="Word image" class="img-fluid rounded mb-3" style="max-height: 250px; display: none;">
+                        <p id="exampleSentence" class="fst-italic text-muted"></p>
+                    </div>
+                    <div class="card-footer text-center">
+                        <button id="prevWordBtn" class="btn btn-outline-secondary me-2" disabled>
+                            <i class="fas fa-arrow-left me-1"></i> Previous
+                        </button>
+                        <button id="nextWordBtn" class="btn btn-outline-primary" disabled>
+                            Next <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <footer class="text-center py-3 mt-4 bg-light">
+        <p class="mb-0">&copy; 2024 Hindi Learning App</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
