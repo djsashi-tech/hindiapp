@@ -18,31 +18,72 @@ document.addEventListener('DOMContentLoaded', () => {
     const hindiWordEl = document.getElementById('hindiWord');
     const englishMeaningEl = document.getElementById('englishMeaning');
     const pronunciationBtn = document.getElementById('pronunciationBtn');
-    const wordImageEl = document.getElementById('wordImage');
+
     const exampleSentenceEl = document.getElementById('exampleSentence');
     const prevWordBtn = document.getElementById('prevWordBtn');
     const nextWordBtn = document.getElementById('nextWordBtn');
     const speakWordBtn = document.getElementById('speakWordBtn');
     const speechFeedbackEl = document.getElementById('speechFeedback');
 
+    // Login elements
+    const loginSection = document.getElementById('loginSection');
+    const learningContent = document.getElementById('learningContent');
+    const loginForm = document.getElementById('loginForm');
+    const userNameEl = document.getElementById('userName');
+    const welcomeMessageEl = document.createElement('p'); // For displaying welcome message
+    welcomeMessageEl.className = 'text-center lead my-3';
+
+    let loggedInUser = null;
     let categories = [];
     let currentWordsList = [];
     let currentWordIndex = 0;
     let activeCategoryId = null;
+
+    // Login form submission
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = userNameEl.value.trim();
+        if (name) {
+            loggedInUser = name;
+            loginSection.style.display = 'none';
+            learningContent.style.display = 'block';
+            // Insert welcome message before category name or somewhere prominent
+            const wordDisplayCardHeader = document.querySelector('#wordDisplayCard .card-header');
+            if (wordDisplayCardHeader) {
+                welcomeMessageEl.textContent = `Welcome, ${loggedInUser}! Select a category to start.`;
+                wordDisplayCardHeader.parentNode.insertBefore(welcomeMessageEl, wordDisplayCardHeader);
+            }
+            await loadCategories();
+        } else {
+            // Optionally, show an error if name is empty
+            alert('Please enter your name.');
+        }
+    });
 
     // Fetch and display categories
     async function loadCategories() {
         try {
             const response = await fetch('/api/categories');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            categories = await response.json();
+            let fetchedCategories = await response.json();
+
+            // De-duplicate categories
+            const uniqueCategoryIds = new Set();
+            categories = fetchedCategories.filter(category => {
+                if (!uniqueCategoryIds.has(category.id)) {
+                    uniqueCategoryIds.add(category.id);
+                    return true;
+                }
+                return false;
+            });
+
             renderCategoryTabs();
-            // Optionally, load the first category's words or a default state
             if (categories.length > 0) {
-                // By default, don't select any category until user clicks
-                // Or select the first one: selectCategory(categories[0].id, categories[0].name);
+                currentCategoryNameEl.textContent = 'Select a category to start.';
+            } else {
+                currentCategoryNameEl.textContent = 'No categories available.';
             }
-        } catch (error) {
+        } catch (error) { // Corrected: removed space before catch
             console.error('Error loading categories:', error);
             currentCategoryNameEl.textContent = 'Error loading categories.';
         }
@@ -50,6 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCategoryTabs() {
         categoryTabsContainer.innerHTML = ''; // Clear existing tabs
+        if (categories.length === 0 && loggedInUser) { // Check if loggedInUser to avoid message before login
+            categoryTabsContainer.innerHTML = '<li class="nav-item"><span class="nav-link text-muted">No categories found.</span></li>';
+            return;
+        }
         categories.forEach(category => {
             const li = document.createElement('li');
             li.className = 'nav-item';
@@ -74,9 +119,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function selectCategory(categoryId, categoryName) {
         activeCategoryId = categoryId;
         currentCategoryNameEl.textContent = categoryName;
+        if(welcomeMessageEl && welcomeMessageEl.parentNode) {
+            welcomeMessageEl.style.display = 'none'; // Hide welcome message once a category is selected
+        }
         hindiWordEl.textContent = '';
         englishMeaningEl.textContent = 'Loading words...';
-        wordImageEl.style.display = 'none';
         exampleSentenceEl.textContent = '';
         pronunciationBtn.disabled = true;
         if (speakWordBtn) speakWordBtn.disabled = true;
@@ -107,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear display if no words
             hindiWordEl.textContent = '';
             englishMeaningEl.textContent = 'No words to display.';
-            wordImageEl.style.display = 'none';
             exampleSentenceEl.textContent = '';
             pronunciationBtn.disabled = true;
             if (speakWordBtn) speakWordBtn.disabled = true;
@@ -122,18 +168,18 @@ document.addEventListener('DOMContentLoaded', () => {
         englishMeaningEl.textContent = word.english_meaning || '';
         exampleSentenceEl.textContent = word.example_sentence || '';
 
-        if (word.image_url) {
-            wordImageEl.src = word.image_url;
-            wordImageEl.alt = word.hindi_word || 'Word image';
-            wordImageEl.style.display = 'block';
-        } else {
-            wordImageEl.style.display = 'none';
-        }
-
         pronunciationBtn.disabled = !word.hindi_word;
         if (speakWordBtn) speakWordBtn.disabled = !word.hindi_word || !SpeechRecognition;
         prevWordBtn.disabled = currentWordIndex === 0;
+
+        // Default next button state
         nextWordBtn.disabled = currentWordIndex === currentWordsList.length - 1;
+        
+        // If speech recognition is available and active for this word, disable 'Next' until correct speech
+        if (SpeechRecognition && speakWordBtn && !speakWordBtn.disabled) {
+            nextWordBtn.disabled = true;
+        }
+
         if (speechFeedbackEl) speechFeedbackEl.textContent = ''; // Clear previous feedback
     }
 
@@ -161,8 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pronunciationBtn.addEventListener('click', playPronunciation);
 
-    // Initial load
-    loadCategories();
+    // Initial load is now handled after login
+    // loadCategories(); 
 
     // Speech Recognition Logic
     if (SpeechRecognition && speakWordBtn) {
@@ -181,23 +227,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        recognition.onresult = (event) => {
-            const spokenText = event.results[0][0].transcript.trim();
-            const currentHindiWord = currentWordsList[currentWordIndex].hindi_word;
+    recognition.onresult = (event) => {
+        const spokenText = event.results[0][0].transcript.trim();
+        const currentHindiWord = currentWordsList[currentWordIndex].hindi_word;
 
-            if (spokenText.toLowerCase() === currentHindiWord.toLowerCase()) {
-                speechFeedbackEl.textContent = `Correct! You said: "${spokenText}"`;
-                speechFeedbackEl.style.color = 'green';
-                // Automatically go to the next word if not the last word
-                if (!nextWordBtn.disabled) {
+        if (spokenText.toLowerCase() === currentHindiWord.toLowerCase()) {
+            speechFeedbackEl.textContent = `Correct! You said: "${spokenText}"`;
+            speechFeedbackEl.style.color = 'green';
+            
+            // Enable next button if it's not the last word
+            nextWordBtn.disabled = currentWordIndex === currentWordsList.length - 1;
+
+                if (!nextWordBtn.disabled) { // If it can be enabled and clicked
                     setTimeout(() => {
-                        nextWordBtn.click();
-                         // speechFeedbackEl.textContent = ''; // Clear after moving
+                        nextWordBtn.click(); 
+                        // speechFeedbackEl.textContent = ''; // Optionally clear feedback after moving
                     }, 1000); // Delay to show feedback
                 }
             } else {
                 speechFeedbackEl.textContent = `Try again. You said: "${spokenText}" (Expected: "${currentHindiWord}")`;
                 speechFeedbackEl.style.color = 'red';
+                nextWordBtn.disabled = true; // Keep next button disabled on incorrect answer
             }
         };
 

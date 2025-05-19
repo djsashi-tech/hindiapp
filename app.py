@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hindi_learning.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/hindi_learning.db'
 db = SQLAlchemy(app)
 
 class Category(db.Model):
