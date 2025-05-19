@@ -67,15 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             let fetchedCategories = await response.json();
 
-            // De-duplicate categories
-            const uniqueCategoryIds = new Set();
-            categories = fetchedCategories.filter(category => {
-                if (!uniqueCategoryIds.has(category.id)) {
-                    uniqueCategoryIds.add(category.id);
-                    return true;
+            // De-duplicate categories by name
+            const uniqueCategoryNames = new Set();
+            const uniqueCategoriesResult = []; // Use a new array to store unique categories
+            fetchedCategories.forEach(category => { // Iterate through all fetched categories
+                if (!uniqueCategoryNames.has(category.name)) { // Check if name is already seen
+                    uniqueCategoryNames.add(category.name); // Add name to set
+                    uniqueCategoriesResult.push(category); // Add the category object to our results
                 }
-                return false;
             });
+            categories = uniqueCategoriesResult; // Update the global 'categories' array
 
             renderCategoryTabs();
             if (categories.length > 0) {
